@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
   },
   text: {
     textAlign: 'center',
-    padding: 5,
+    padding: 15,
     textTransform: 'uppercase',
     fontWeight: "500"
   }

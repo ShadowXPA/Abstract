@@ -1,132 +1,134 @@
 import { useRandom } from "@/hooks/useRandom";
-import { ScrollView, Text, View } from "react-native";
-import { globalStyles } from "../global.css";
+import { Alert, BackHandler, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { globalStyles } from "@/app/global.css";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Orientation, useOrientation } from "@/hooks/useOrientation";
 import { useEffect, useRef, useState } from "react";
 import { landscapeStyles, portraitStyles } from "./play.css";
-import { Hint } from "@/components/xpa-hint";
 import XPAHintGroup from "@/components/xpa-hint-group";
-import WheelPicker from "react-native-wheely";
 import XPAButton from "@/components/xpa-button";
-import { GameState, SetGameStateAction, useGameState } from "@/hooks/useGameState";
-
-const options = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-const solutionSize = 3
-const numberGuesses = 10
+import XPANumberPicker from "@/components/xpa-number-picker";
+import { useGameData, Hint } from "@/hooks/useGameData";
 
 export default function Play() {
   const orientation = useOrientation()
   const styles = orientation == Orientation.PORTRAIT ? portraitStyles : landscapeStyles
 
+  const gameData = useGameData()
   let guessScrollView = useRef<ScrollView | null>().current
-  const solution = useRef<number[]>(generateSolution(solutionSize)).current
-  const [guesses, setGuesses] = useState<Guess[]>([])
-  const [gameState, setGameState] = useGameState()
-  const currentGuess: number[] = []
+  const currentGuess = useRef<number[]>()
   const wheelPickers = []
+  const [modalVisible, setModalVisible] = useState(false)
 
-  console.log('solution', solution)
+  if (!currentGuess.current) {
+    currentGuess.current = Array(gameData.solutionSize).fill(0)
+  }
 
-  for (let i = 0; i < solutionSize; i++) {
-    const [num, setNum] = useState<number>(0)
-    currentGuess.push(num)
+  console.log('solution', gameData.solution)
 
+  for (let i = 0; i < gameData.solutionSize; i++) {
     wheelPickers.push(
-      <WheelPicker key={i} selectedIndex={num} options={options} onChange={(index) => setNum(parseInt(options[index]))} />
+      <XPANumberPicker key={i} onChange={(option) => currentGuess.current![i] = (parseInt(option))} />
     )
   }
 
   useEffect(() => {
-    console.log('over?', gameState.over)
-    console.log('winner?', gameState.winner)
+    gameData.start()
+    return () => gameData.stop()
+  }, [])
 
-    if (!gameState.over) return
+  useEffect(() => {
+    console.log('over?', gameData.isGameOver)
+    console.log('winner?', gameData.isWinner)
 
-  }, [guesses])
+    if (!gameData.isGameOver) return
+
+    // Show modal
+    setModalVisible(true)
+  }, [gameData.guesses])
 
   return (
     <View style={globalStyles.body}>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          Alert.alert('Modal has been closed.');
+          router.navigate('/')
+        }}>
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalText}>Hello World!</Text>
+            <Pressable
+              style={[styles.button, styles.buttonClose]}
+              onPress={() => router.navigate('/')}>
+              <Text style={styles.textStyle}>Hide Modal</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
       <View style={globalStyles.header}>
         <Ionicons name="arrow-back" size={globalStyles.headerTitle.fontSize} onPress={() => router.navigate('/')} />
       </View>
       <View style={styles.content}>
-        <ScrollView
-          horizontal={orientation == Orientation.PORTRAIT}
-          ref={ref => { guessScrollView = ref }}
-          onContentSizeChange={() => guessScrollView?.scrollToEnd({ animated: true })}>
-          <View style={styles.hints}>
-            {guesses.map((item, index) => <XPAHintGroup key={index} guess={item.num} hints={item.hints} />)}
+        <View style={styles.hud}>
+          <Text style={styles.time}>{formatTime(gameData.time)}</Text>
+          <Text style={styles.score}>{gameData.score}</Text>
+          <Text style={styles.numberTries}>{gameData.guesses.length}/{gameData.numberGuesses}</Text>
+        </View>
+        <View style={styles.gameArea}>
+          <View style={styles.hintArea}>
+            {gameData.guesses.length === 0 ?
+              <View style={{ opacity: 0 }}>
+                <XPAHintGroup
+                  guess={Array(gameData.solutionSize).fill(0)}
+                  hints={Array(gameData.solutionSize).fill(Hint.ABSTRACT)}
+                />
+              </View>
+              :
+              <ScrollView
+                ref={ref => { guessScrollView = ref }}
+                onContentSizeChange={() => guessScrollView?.scrollToEnd({ animated: true })}
+                showsVerticalScrollIndicator={false}
+                showsHorizontalScrollIndicator={false}
+                horizontal={orientation == Orientation.PORTRAIT}>
+                <View style={styles.hints}>
+                  {gameData.guesses.map((item, index) => <XPAHintGroup key={index} guess={item.guess} hints={item.hints} />)}
+                </View>
+              </ScrollView>
+            }
           </View>
-        </ScrollView>
-        <View style={styles.actions}>
-          <View style={styles.numberAction}>
-            {wheelPickers.map((item) => item)}
+          <View style={styles.actions}>
+            <View style={styles.guess}>
+              {wheelPickers.map((item) => item)}
+            </View>
+            <View style={styles.buttonArea}>
+              <XPAButton title="Guess"
+                disabled={gameData.isGameOver}
+                buttonStyle={styles.button}
+                onPress={() => gameData.addGuess(JSON.parse(JSON.stringify(currentGuess.current)))}
+              />
+            </View>
           </View>
-          <XPAButton title="Guess"
-            disabled={gameState.over}
-            buttonStyle={styles.button}
-            onPress={() => addGuess(guesses, currentGuess, solution, setGuesses, setGameState)}
-          />
         </View>
       </View>
     </View>
   )
 }
 
-interface Guess {
-  num: number[],
-  hints: Hint[]
-}
+const formatTime = (seconds: number, maxMinutes = 59): string => {
+  let minutes = Math.floor(seconds / 60);
+  let remainingSeconds = seconds % 60;
 
-const generateSolution = (size = 3): number[] => {
-  const array: number[] = []
-
-  while (array.length < size) {
-    array.push(useRandom(0, 9))
+  if (minutes > maxMinutes) {
+    minutes = maxMinutes;
+    remainingSeconds = 59;
   }
 
-  return array
-}
+  const formattedMinutes = String(minutes).padStart(2, '0');
+  const formattedSeconds = String(remainingSeconds).padStart(2, '0');
 
-const generateHint = (solution: Readonly<number[]>, guess: Readonly<number[]>): Hint[] => {
-  let solutionCopy: (number | null)[] = JSON.parse(JSON.stringify(solution))
-  const hints: Hint[] = []
-
-  for (let i = 0; i < solutionCopy.length; i++) {
-    if (solutionCopy[i] === guess[i]) {
-      hints.push(Hint.ASTUTE)
-      solutionCopy[i] = null
-    }
-  }
-
-  for (let i = 0; i < guess.length; i++) {
-    const index = solutionCopy.indexOf(guess[i])
-    if (index !== -1) {
-      hints.push(Hint.ASKEW)
-      solutionCopy[index] = null
-    }
-  }
-
-  solutionCopy = solutionCopy.filter(number => number != null)
-
-  while (hints.length < solution.length) {
-    hints.push(Hint.ABSTRACT)
-  }
-
-  return hints
-}
-
-const addGuess = (guesses: Guess[], currentGuess: number[], solution: number[], setGuesses: React.Dispatch<React.SetStateAction<Guess[]>>, setGameState: SetGameStateAction) => {
-  if (guesses.length >= numberGuesses) return
-
-  const hints = generateHint(solution, currentGuess)
-
-  setGameState((guesses.length + 1) >= numberGuesses, hints.every((item) => item === Hint.ASTUTE))
-
-  setGuesses([...guesses, {
-    num: currentGuess,
-    hints
-  }])
+  return `${formattedMinutes}:${formattedSeconds}`;
 }

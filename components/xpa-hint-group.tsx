@@ -1,7 +1,8 @@
+import { Hint } from "@/hooks/useGameData"
 import { Text, View } from "react-native"
-import XPAHint, { Hint } from "./xpa-hint"
+import XPAHint from "./xpa-hint"
 
-export default function XPAHintGroup({ hints, guess }: Readonly<{ hints: Hint[], guess: number[] }>) {
+export default function XPAHintGroup({ hints, guess, size = 22 }: Readonly<{ hints: Hint[], guess: number[], size?: number }>) {
   return (
     <View style={{
       flexDirection: 'column',
@@ -16,7 +17,7 @@ export default function XPAHintGroup({ hints, guess }: Readonly<{ hints: Hint[],
           return (
             <View key={index} style={{
             }}>
-              <XPAHint hint={item} />
+              <XPAHint hint={item} size={size} />
             </View>
           )
         })}
@@ -28,7 +29,8 @@ export default function XPAHintGroup({ hints, guess }: Readonly<{ hints: Hint[],
         {guess.map((item, index) => {
           return (
             <Text key={index} style={{
-              textAlign: 'center'
+              textAlign: 'center',
+              fontSize: size
             }}>{item}</Text>
           )
         })}

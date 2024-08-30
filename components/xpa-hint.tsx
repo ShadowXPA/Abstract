@@ -1,15 +1,5 @@
+import { Hint } from "@/hooks/useGameData";
 import { Ionicons } from "@expo/vector-icons";
-
-/**
- * ASTUTE = Player digit corresponds exactly with that of the number being held in memory
- * ABSTRACT = Player digit has no match anywhere within the computer's number
- * ASKEW = Player digit matches one of the computer's, but the digit is in the wrong position
- */
-export enum Hint {
-  ASTUTE = "ASTUTE",
-  ABSTRACT = "ABSTRACT",
-  ASKEW = "ASKEW"
-}
 
 export default function XPAHint({ hint, size = 22 }: Readonly<{ hint: Hint, size?: number }>) {
   const [icon, color] = getIconAndColorByHint(hint)
