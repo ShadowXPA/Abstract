@@ -7,8 +7,8 @@ const isPortrait = () => {
 }
 
 export enum Orientation {
-  PORTRAIT,
-  LANDSCAPE
+  PORTRAIT = "PORTRAIT",
+  LANDSCAPE = "LANDSCAPE"
 }
 
 export function useOrientation(): Orientation {

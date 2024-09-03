@@ -21,16 +21,18 @@ export interface ScoreSystem {
   astute: number,
   askew: number,
   abstract: number,
-  winner: number,
-  loser: number
+  winner: number
 }
 
-export const defaultScoreSystem = {
-  astute: 50,
-  askew: 25,
-  abstract: 10,
-  winner: 3000,
-  loser: -1000
+export const defaultSettings = {
+  solutionSize: 4,
+  numberGuesses: 10,
+  scoreSystem: {
+    astute: 50,
+    askew: 25,
+    abstract: 5,
+    winner: 200,
+  },
 }
 
 export interface GameData {
@@ -39,6 +41,7 @@ export interface GameData {
   start: () => void,
   stop: () => void,
   time: number,
+  getElapsedTime: () => number,
   score: number,
   solution: number[],
   guesses: Guess[],
@@ -48,6 +51,7 @@ export interface GameData {
   setGameOver: (over: boolean) => void,
   isWinner: boolean,
   setWinner: (winner: boolean) => void,
+  getGameOverText: () => string,
 }
 
 export function useGameData({ solutionSize, numberGuesses, solution, scoreSystem }:
@@ -58,18 +62,19 @@ export function useGameData({ solutionSize, numberGuesses, solution, scoreSystem
     scoreSystem?: ScoreSystem
   }> = {}): GameData {
   const [time, setTime] = useState(0)
-  const size = useRef(solutionSize ?? 3)
-  const numGuesses = useRef(numberGuesses ?? 10)
+  const elapsedTime = useRef(time)
+  const size = useRef(solutionSize ?? defaultSettings.solutionSize)
+  const numGuesses = useRef(numberGuesses ?? defaultSettings.numberGuesses)
   const score = useRef(0)
   const sol = useRef<number[]>()
   const [guesses, setGuesses] = useState<Guess[]>([])
-  const scoreSys = useRef<ScoreSystem>(scoreSystem ?? defaultScoreSystem)
+  const scoreSys = useRef<ScoreSystem>(scoreSystem ?? defaultSettings.scoreSystem)
   const isGameOver = useRef(false)
   const isWinner = useRef(false)
   let timeInterval: (NodeJS.Timeout | undefined)
 
   if (!sol.current) {
-    sol.current = solution ?? [0, 0, 1]//generateSolution(size.current)
+    sol.current = solution ?? generateSolution(size.current)
   }
 
   const start = () => {
@@ -89,16 +94,18 @@ export function useGameData({ solutionSize, numberGuesses, solution, scoreSystem
     timeInterval = undefined
   }
 
+  const getElapsedTime = () => elapsedTime.current
+
+  useEffect(() => {
+    elapsedTime.current = time
+  }, [time])
+
   const setGameOver = (gameOver: boolean) => {
     isGameOver.current = gameOver
 
     if (isGameOver.current) {
-      // TODO: fix these scores
       if (isWinner.current) {
-        score.current += (scoreSys.current.winner + (guesses.length * scoreSys.current.loser))
-      } else {
-        score.current += scoreSys.current.loser
-        score.current = Math.max(score.current, 0)
+        score.current += Math.floor((scoreSys.current.winner * (numGuesses.current - ((guesses.length + 1) + (elapsedTime.current / 3600)))))
       }
     }
   }
@@ -123,25 +130,36 @@ export function useGameData({ solutionSize, numberGuesses, solution, scoreSystem
     setGuesses([...guesses, { guess, hints }])
   }
 
+  const getGameOverText = () => {
+    return (isWinner.current
+      ? 'You got it - ' + ((guesses.length < Math.ceil(numGuesses.current * 0.65))
+        ? `in only ${guesses.length} guess${guesses.length === 1 ? '' : 'es'}!`
+        : 'finally!!!')
+      : 'Better luck next time...')
+      + `\n\nTime: ${formatTime(time)}\nFinal score: ${score.current}\nSolution: ${formatSolution(sol.current!)}`
+  }
+
   return {
     solutionSize: size.current,
     numberGuesses: numGuesses.current,
-    start: start,
-    stop: stop,
-    time: time,
+    start,
+    stop,
+    time,
+    getElapsedTime,
     score: score.current,
     solution: sol.current,
-    guesses: guesses,
+    guesses,
     scoreSystem: scoreSys.current,
-    addGuess: addGuess,
+    addGuess,
     isGameOver: isGameOver.current,
-    setGameOver: setGameOver,
+    setGameOver,
     isWinner: isWinner.current,
-    setWinner: setWinner,
+    setWinner,
+    getGameOverText,
   }
 }
 
-const generateSolution = (size = 3): number[] => {
+export const generateSolution = (size = 3): number[] => {
   const array: number[] = []
 
   while (array.length < size) {
@@ -151,7 +169,7 @@ const generateSolution = (size = 3): number[] => {
   return array
 }
 
-const generateHint = (solution: Readonly<number[]>, guess: Readonly<number[]>): Hint[] => {
+export const generateHint = (solution: Readonly<number[]>, guess: Readonly<number[]>): Hint[] => {
   let solutionCopy: (number | null)[] = JSON.parse(JSON.stringify(solution))
   let guessCopy: (number | null)[] = JSON.parse(JSON.stringify(guess))
   const hints: Hint[] = []
@@ -192,4 +210,23 @@ const calculateHintScore = (hints: Hint[], scoreSystem: ScoreSystem): number => 
       }
     })
     .reduce((prev, cur) => prev + cur)
+}
+
+export const formatTime = (seconds: number, maxMinutes = 59): string => {
+  let minutes = Math.floor(seconds / 60);
+  let remainingSeconds = seconds % 60;
+
+  if (minutes > maxMinutes) {
+    minutes = maxMinutes;
+    remainingSeconds = 59;
+  }
+
+  const formattedMinutes = String(minutes).padStart(2, '0');
+  const formattedSeconds = String(remainingSeconds).padStart(2, '0');
+
+  return `${formattedMinutes}:${formattedSeconds}`;
+}
+
+export const formatSolution = (solution: number[]): string => {
+  return solution.toString().replaceAll(',', '')
 }

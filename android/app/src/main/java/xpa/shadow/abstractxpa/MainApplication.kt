@@ -1,4 +1,4 @@
-package xpa.shadow
+package xpa.shadow.abstractxpa
 
 import android.app.Application
 import android.content.res.Configuration

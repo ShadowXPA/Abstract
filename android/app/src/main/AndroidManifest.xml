@@ -24,8 +24,8 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="abstract"/>
-        <data android:scheme="xpa.shadow"/>
+        <data android:scheme="abstractxpa"/>
+        <data android:scheme="xpa.shadow.abstractxpa"/>
         <data android:scheme="exp+abstract"/>
       </intent-filter>
     </activity>

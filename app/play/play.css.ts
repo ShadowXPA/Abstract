@@ -3,7 +3,7 @@ import { StyleSheet } from "react-native";
 export const portraitStyles = StyleSheet.create({
   content: {
     flex: 1,
-    gap: 50
+    gap: 75
   },
   hud: {
     flexDirection: 'row',
@@ -32,69 +32,29 @@ export const portraitStyles = StyleSheet.create({
   hints: {
     flexDirection: 'row',
     gap: 10,
-    alignItems: 'center'
+    alignItems: 'center',
+    paddingHorizontal: 0,
+    paddingVertical: 10,
   },
   actions: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10
+    gap: 10,
   },
   guess: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    width: '100%',
+    justifyContent: 'space-evenly',
     gap: 10,
   },
   buttonArea: {
     width: '50%'
   },
-  // button: {
-  // },
-
-  centeredView: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 22,
-  },
-  modalView: {
-    margin: 20,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 35,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
   button: {
-    borderRadius: 20,
-    padding: 10,
-    elevation: 2,
   },
-  buttonOpen: {
-    backgroundColor: '#F194FF',
-  },
-  buttonClose: {
-    backgroundColor: '#2196F3',
-  },
-  textStyle: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  modalText: {
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-
 })
 
 export const landscapeStyles = StyleSheet.create({
@@ -116,15 +76,17 @@ export const landscapeStyles = StyleSheet.create({
   },
   gameArea: {
     ...portraitStyles.gameArea,
-    flexDirection: 'row'
+    flexDirection: 'row',
   },
   hintArea: {
     ...portraitStyles.hintArea,
-    paddingHorizontal: 50
+    paddingHorizontal: 50,
   },
   hints: {
     ...portraitStyles.hints,
     flexDirection: 'column',
+    paddingHorizontal: 10,
+    paddingVertical: 0,
   },
   actions: {
     ...portraitStyles.actions,

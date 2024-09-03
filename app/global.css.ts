@@ -4,8 +4,7 @@ export const globalStyles = StyleSheet.create({
   body: {
     flex: 1,
     backgroundColor: '#f8f8ff',
-    paddingVertical: 20,
-    paddingHorizontal: 10
+    padding: 10,
   },
   header: {
     flexDirection: 'row',
