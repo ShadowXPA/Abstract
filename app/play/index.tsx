@@ -1,6 +1,6 @@
-import { ScrollView, Text, View } from "react-native";
+import { Alert, ScrollView, Text, View } from "react-native";
 import { globalStyles } from "@/app/global.css";
-import { router } from "expo-router";
+import { router, useNavigation } from "expo-router";
 import { Orientation, useOrientation } from "@/hooks/useOrientation";
 import { useEffect, useRef, useState } from "react";
 import { landscapeStyles, portraitStyles } from "./play.css";
@@ -8,9 +8,9 @@ import XPAHintGroup from "@/components/xpa-hint-group";
 import XPAButton from "@/components/xpa-button";
 import XPANumberPicker from "@/components/xpa-number-picker";
 import { formatTime, Hint, useGameData } from "@/hooks/useGameData";
-import XPAAlert from "@/components/xpa-alert";
 
 export default function Play() {
+  const navigation = useNavigation()
   const orientation = useOrientation()
   const styles = orientation == Orientation.PORTRAIT ? portraitStyles : landscapeStyles
 
@@ -18,7 +18,6 @@ export default function Play() {
   const currentGuess = useRef<number[]>()
   const guessScrollView = useRef<ScrollView | null>()
   const wheelPickers = useRef<React.JSX.Element[]>()
-  const [gameOverModalVisible, setGameOverModalVisible] = useState(false)
 
   if (!currentGuess.current) {
     currentGuess.current = Array(gameData.solutionSize).fill(0)
@@ -34,27 +33,40 @@ export default function Play() {
     }
   }
 
-  console.log('solution', gameData.solution)
-
   useEffect(() => {
     gameData.start()
-    return () => gameData.stop()
+
+    const unsubscribeBeforeRemove = navigation.addListener('beforeRemove', (e) => {
+      if (e.data.action.type === 'GO_BACK' || e.data.action.type === 'POP') {
+        e.preventDefault()
+
+        Alert.alert('You are leaving the game...', 'Are you sure you want to go back?', [
+          {
+            text: 'Cancel',
+            onPress: () => {},
+            style: 'cancel',
+          },
+          { text: 'Yes', onPress: () => navigation.dispatch(e.data.action) },
+        ])
+      }
+    })
+
+    return () => {
+      gameData.stop()
+      unsubscribeBeforeRemove()
+    }
   }, [])
 
   useEffect(() => {
     if (!gameData.isGameOver) return
 
-    setGameOverModalVisible(true)
+    Alert.alert(gameData.isWinner ? 'Winner!' : 'Game over!', gameData.getGameOverText(), [
+          { text: 'Close', onPress: () => router.navigate('/')},
+        ])
   }, [gameData.guesses])
 
   return (
     <View style={globalStyles.body}>
-      <XPAAlert
-        visible={gameOverModalVisible}
-        title={gameData.isWinner ? "Winner!" : "Game over!"}
-        text={gameData.getGameOverText()}
-        onClose={() => router.navigate('/')}
-      />
       <View style={styles.content}>
         <View style={styles.hud}>
           <Text style={styles.time}>{formatTime(gameData.time)}</Text>
