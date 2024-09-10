@@ -1,6 +1,6 @@
 # Abstract
 
-![Abstract](resources/Abstract.png "Abstract game")
+![Abstract](screenshots/screenshot-1.png "Abstract game")
 
 Abstract is a number guessing game.  
 This game was made using [React Native](https://reactnative.dev/) and [Expo](https://expo.dev/).  
